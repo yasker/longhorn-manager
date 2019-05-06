@@ -85,7 +85,6 @@ func newTestReplicaController(lhInformerFactory lhinformerfactory.SharedInformer
 	lhClient *lhfake.Clientset, kubeClient *fake.Clientset,
 	controllerID string) *ReplicaController {
 
-	engineInformer := lhInformerFactory.Longhorn().V1alpha1().Engines()
 	replicaInformer := lhInformerFactory.Longhorn().V1alpha1().Replicas()
 	engineImageInformer := lhInformerFactory.Longhorn().V1alpha1().EngineImages()
 	nodeInformer := lhInformerFactory.Longhorn().V1alpha1().Nodes()
@@ -97,7 +96,7 @@ func newTestReplicaController(lhInformerFactory lhinformerfactory.SharedInformer
 	persistentVolumeClaimInformer := kubeInformerFactory.Core().V1().PersistentVolumeClaims()
 
 	ds := datastore.NewDataStore(
-		engineInformer, replicaInformer,
+		replicaInformer,
 		engineImageInformer, nodeInformer,
 		lhClient,
 		podInformer, cronJobInformer, daemonSetInformer,

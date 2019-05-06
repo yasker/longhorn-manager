@@ -363,23 +363,21 @@ func (s *DataStore) RemoveFinalizerForEngine(obj *longhorn.Engine) error {
 }
 
 func (s *DataStore) GetEngine(name string) (*longhorn.Engine, error) {
-	resultRO, err := s.eLister.Engines(s.namespace).Get(name)
+	result, err := s.lh().Engines(s.namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-	// Cannot use cached object from lister
-	return s.fixupEngine(resultRO.DeepCopy())
+	return s.fixupEngine(result)
 }
 
-func (s *DataStore) listEngines(selector labels.Selector) (map[string]*longhorn.Engine, error) {
-	list, err := s.eLister.Engines(s.namespace).List(selector)
+func (s *DataStore) listEngines(selector string) (map[string]*longhorn.Engine, error) {
+	list, err := s.lh().Engines(s.namespace).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return nil, err
 	}
 	engines := map[string]*longhorn.Engine{}
-	for _, e := range list {
-		// Cannot use cached object from lister
-		engines[e.Name], err = s.fixupEngine(e.DeepCopy())
+	for i, e := range list.Items {
+		engines[e.Name], err = s.fixupEngine(&list.Items[i])
 		if err != nil {
 			return nil, err
 		}
@@ -388,15 +386,11 @@ func (s *DataStore) listEngines(selector labels.Selector) (map[string]*longhorn.
 }
 
 func (s *DataStore) ListEngines() (map[string]*longhorn.Engine, error) {
-	return s.listEngines(labels.Everything())
+	return s.listEngines("")
 }
 
 func (s *DataStore) ListVolumeEngines(volumeName string) (map[string]*longhorn.Engine, error) {
-	selector, err := getVolumeSelector(volumeName)
-	if err != nil {
-		return nil, err
-	}
-	return s.listEngines(selector)
+	return s.listEngines(getVolumeSelectorString(volumeName))
 }
 
 func (s *DataStore) fixupEngine(engine *longhorn.Engine) (*longhorn.Engine, error) {
@@ -879,11 +873,14 @@ func (s *DataStore) DeleteNode(name string) error {
 	return s.lh().Nodes(s.namespace).Delete(name, &metav1.DeleteOptions{})
 }
 
-func (s *DataStore) ListEnginesByNode(name string) ([]*longhorn.Engine, error) {
-	nodeSelector, err := getNodeSelector(name)
-	engineList, err := s.eLister.Engines(s.namespace).List(nodeSelector)
-	if err != nil {
-		return nil, err
-	}
-	return engineList, nil
+func (s *DataStore) ListEnginesByNode(name string) (map[string]*longhorn.Engine, error) {
+	return s.listEngines(getNodeSelectorString(name))
+}
+
+func getVolumeSelectorString(volumeName string) string {
+	return LonghornVolumeKey + "=" + volumeName
+}
+
+func getNodeSelectorString(nodeName string) string {
+	return types.LonghornNodeKey + "=" + nodeName
 }

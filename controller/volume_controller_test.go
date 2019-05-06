@@ -57,7 +57,7 @@ func newTestVolumeController(lhInformerFactory lhinformerfactory.SharedInformerF
 	persistentVolumeClaimInformer := kubeInformerFactory.Core().V1().PersistentVolumeClaims()
 
 	ds := datastore.NewDataStore(
-		engineInformer, replicaInformer,
+		replicaInformer,
 		engineImageInformer, nodeInformer,
 		lhClient,
 		podInformer, cronJobInformer, daemonSetInformer,
@@ -551,7 +551,6 @@ func (s *TestSuite) runTestCases(c *C, testCases map[string]*VolumeTestCase) {
 
 		lhClient := lhfake.NewSimpleClientset()
 		lhInformerFactory := lhinformerfactory.NewSharedInformerFactory(lhClient, controller.NoResyncPeriodFunc())
-		eIndexer := lhInformerFactory.Longhorn().V1alpha1().Engines().Informer().GetIndexer()
 		rIndexer := lhInformerFactory.Longhorn().V1alpha1().Replicas().Informer().GetIndexer()
 		nIndexer := lhInformerFactory.Longhorn().V1alpha1().Nodes().Informer().GetIndexer()
 
@@ -603,9 +602,7 @@ func (s *TestSuite) runTestCases(c *C, testCases map[string]*VolumeTestCase) {
 
 		if tc.engines != nil {
 			for _, e := range tc.engines {
-				e, err := lhClient.LonghornV1alpha1().Engines(TestNamespace).Create(e)
-				c.Assert(err, IsNil)
-				err = eIndexer.Add(e)
+				_, err := lhClient.LonghornV1alpha1().Engines(TestNamespace).Create(e)
 				c.Assert(err, IsNil)
 			}
 		}
