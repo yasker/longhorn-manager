@@ -41,7 +41,7 @@ func (s *DataStore) InitSettings() error {
 		if !ok {
 			return fmt.Errorf("BUG: setting %v is not defined", sName)
 		}
-		if _, err := s.sLister.Settings(s.namespace).Get(string(sName)); err != nil {
+		if _, err := s.lh().Settings(s.namespace).Get(string(sName), metav1.GetOptions{}); err != nil {
 			if ErrorIsNotFound(err) {
 				setting := &longhorn.Setting{
 					ObjectMeta: metav1.ObjectMeta{
@@ -78,12 +78,12 @@ func (s *DataStore) GetSetting(sName types.SettingName) (*longhorn.Setting, erro
 	if !ok {
 		return nil, fmt.Errorf("setting %v is not supported", sName)
 	}
-	resultRO, err := s.sLister.Settings(s.namespace).Get(string(sName))
+	result, err := s.lh().Settings(s.namespace).Get(string(sName), metav1.GetOptions{})
 	if err != nil {
 		if !ErrorIsNotFound(err) {
 			return nil, err
 		}
-		resultRO = &longhorn.Setting{
+		result = &longhorn.Setting{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: string(sName),
 			},
@@ -92,7 +92,7 @@ func (s *DataStore) GetSetting(sName types.SettingName) (*longhorn.Setting, erro
 			},
 		}
 	}
-	return resultRO.DeepCopy(), nil
+	return result, nil
 }
 
 func (s *DataStore) GetSettingValueExisted(sName types.SettingName) (string, error) {
@@ -109,17 +109,16 @@ func (s *DataStore) GetSettingValueExisted(sName types.SettingName) (string, err
 func (s *DataStore) ListSettings() (map[types.SettingName]*longhorn.Setting, error) {
 	itemMap := make(map[types.SettingName]*longhorn.Setting)
 
-	list, err := s.sLister.Settings(s.namespace).List(labels.Everything())
+	list, err := s.lh().Settings(s.namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	for _, itemRO := range list {
-		// Cannot use cached object from lister
-		settingField := types.SettingName(itemRO.Name)
+	for i, item := range list.Items {
+		settingField := types.SettingName(item.Name)
 		// Ignore the items that we don't recongize
 		if _, ok := types.SettingDefinitions[settingField]; ok {
-			itemMap[settingField] = itemRO.DeepCopy()
+			itemMap[settingField] = &list.Items[i]
 		}
 	}
 	// fill up the missing entries
