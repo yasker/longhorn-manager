@@ -18,6 +18,7 @@ import (
 	"github.com/rancher/longhorn-manager/util"
 
 	longhorn "github.com/rancher/longhorn-manager/k8s/pkg/apis/longhorn/v1alpha1"
+	longhornv1alpha1 "github.com/rancher/longhorn-manager/k8s/pkg/client/clientset/versioned/typed/longhorn/v1alpha1"
 )
 
 const (
@@ -29,6 +30,10 @@ const (
 var (
 	longhornFinalizerKey = longhorn.SchemeGroupVersion.Group
 )
+
+func (s *DataStore) lh() longhornv1alpha1.LonghornV1alpha1Interface {
+	return s.lhClient.Longhorn()
+}
 
 func (s *DataStore) InitSettings() error {
 	for _, sName := range types.SettingNameList {
@@ -58,11 +63,11 @@ func (s *DataStore) InitSettings() error {
 }
 
 func (s *DataStore) CreateSetting(setting *longhorn.Setting) (*longhorn.Setting, error) {
-	return s.lhClient.LonghornV1alpha1().Settings(s.namespace).Create(setting)
+	return s.lh().Settings(s.namespace).Create(setting)
 }
 
 func (s *DataStore) UpdateSetting(setting *longhorn.Setting) (*longhorn.Setting, error) {
-	return s.lhClient.LonghornV1alpha1().Settings(s.namespace).Update(setting)
+	return s.lh().Settings(s.namespace).Update(setting)
 }
 
 // GetSetting will automatically fill the non-existing setting if it's a valid
@@ -212,7 +217,7 @@ func (s *DataStore) CreateVolume(v *longhorn.Volume) (*longhorn.Volume, error) {
 	if err := fixupMetadata(v.Name, v); err != nil {
 		return nil, err
 	}
-	return s.lhClient.LonghornV1alpha1().Volumes(s.namespace).Create(v)
+	return s.lh().Volumes(s.namespace).Create(v)
 }
 
 func (s *DataStore) UpdateVolume(v *longhorn.Volume) (*longhorn.Volume, error) {
@@ -222,12 +227,12 @@ func (s *DataStore) UpdateVolume(v *longhorn.Volume) (*longhorn.Volume, error) {
 	if err := fixupMetadata(v.Name, v); err != nil {
 		return nil, err
 	}
-	return s.lhClient.LonghornV1alpha1().Volumes(s.namespace).Update(v)
+	return s.lh().Volumes(s.namespace).Update(v)
 }
 
 // DeleteVolume won't result in immediately deletion since finalizer was set by default
 func (s *DataStore) DeleteVolume(name string) error {
-	return s.lhClient.LonghornV1alpha1().Volumes(s.namespace).Delete(name, &metav1.DeleteOptions{})
+	return s.lh().Volumes(s.namespace).Delete(name, &metav1.DeleteOptions{})
 }
 
 // RemoveFinalizerForVolume will result in deletion if DeletionTimestamp was set
@@ -239,7 +244,7 @@ func (s *DataStore) RemoveFinalizerForVolume(obj *longhorn.Volume) error {
 	if err := util.RemoveFinalizer(longhornFinalizerKey, obj); err != nil {
 		return err
 	}
-	_, err := s.lhClient.LonghornV1alpha1().Volumes(s.namespace).Update(obj)
+	_, err := s.lh().Volumes(s.namespace).Update(obj)
 	if err != nil {
 		// workaround `StorageError: invalid object, Code: 4` due to empty object
 		if obj.DeletionTimestamp != nil {
@@ -331,7 +336,7 @@ func (s *DataStore) CreateEngine(e *longhorn.Engine) (*longhorn.Engine, error) {
 	if err := tagNodeLabel(e.Spec.NodeID, e); err != nil {
 		return nil, err
 	}
-	return s.lhClient.LonghornV1alpha1().Engines(s.namespace).Create(e)
+	return s.lh().Engines(s.namespace).Create(e)
 }
 
 func (s *DataStore) UpdateEngine(e *longhorn.Engine) (*longhorn.Engine, error) {
@@ -344,12 +349,12 @@ func (s *DataStore) UpdateEngine(e *longhorn.Engine) (*longhorn.Engine, error) {
 	if err := tagNodeLabel(e.Spec.NodeID, e); err != nil {
 		return nil, err
 	}
-	return s.lhClient.LonghornV1alpha1().Engines(s.namespace).Update(e)
+	return s.lh().Engines(s.namespace).Update(e)
 }
 
 // DeleteEngine won't result in immediately deletion since finalizer was set by default
 func (s *DataStore) DeleteEngine(name string) error {
-	return s.lhClient.LonghornV1alpha1().Engines(s.namespace).Delete(name, &metav1.DeleteOptions{})
+	return s.lh().Engines(s.namespace).Delete(name, &metav1.DeleteOptions{})
 }
 
 // RemoveFinalizerForEngine will result in deletion if DeletionTimestamp was set
@@ -361,7 +366,7 @@ func (s *DataStore) RemoveFinalizerForEngine(obj *longhorn.Engine) error {
 	if err := util.RemoveFinalizer(longhornFinalizerKey, obj); err != nil {
 		return err
 	}
-	_, err := s.lhClient.LonghornV1alpha1().Engines(s.namespace).Update(obj)
+	_, err := s.lh().Engines(s.namespace).Update(obj)
 	if err != nil {
 		// workaround `StorageError: invalid object, Code: 4` due to empty object
 		if obj.DeletionTimestamp != nil {
@@ -445,7 +450,7 @@ func (s *DataStore) CreateReplica(r *longhorn.Replica) (*longhorn.Replica, error
 	if err := tagNodeLabel(r.Spec.NodeID, r); err != nil {
 		return nil, err
 	}
-	return s.lhClient.LonghornV1alpha1().Replicas(s.namespace).Create(r)
+	return s.lh().Replicas(s.namespace).Create(r)
 }
 
 func (s *DataStore) UpdateReplica(r *longhorn.Replica) (*longhorn.Replica, error) {
@@ -458,12 +463,12 @@ func (s *DataStore) UpdateReplica(r *longhorn.Replica) (*longhorn.Replica, error
 	if err := tagNodeLabel(r.Spec.NodeID, r); err != nil {
 		return nil, err
 	}
-	return s.lhClient.LonghornV1alpha1().Replicas(s.namespace).Update(r)
+	return s.lh().Replicas(s.namespace).Update(r)
 }
 
 // DeleteReplica won't result in immediately deletion since finalizer was set by default
 func (s *DataStore) DeleteReplica(name string) error {
-	return s.lhClient.LonghornV1alpha1().Replicas(s.namespace).Delete(name, &metav1.DeleteOptions{})
+	return s.lh().Replicas(s.namespace).Delete(name, &metav1.DeleteOptions{})
 }
 
 // RemoveFinalizerForReplica will result in deletion if DeletionTimestamp was set
@@ -475,7 +480,7 @@ func (s *DataStore) RemoveFinalizerForReplica(obj *longhorn.Replica) error {
 	if err := util.RemoveFinalizer(longhornFinalizerKey, obj); err != nil {
 		return err
 	}
-	_, err := s.lhClient.LonghornV1alpha1().Replicas(s.namespace).Update(obj)
+	_, err := s.lh().Replicas(s.namespace).Update(obj)
 	if err != nil {
 		// workaround `StorageError: invalid object, Code: 4` due to empty object
 		if obj.DeletionTimestamp != nil {
@@ -583,19 +588,19 @@ func (s *DataStore) CreateEngineImage(img *longhorn.EngineImage) (*longhorn.Engi
 	if err := util.AddFinalizer(longhornFinalizerKey, img); err != nil {
 		return nil, err
 	}
-	return s.lhClient.LonghornV1alpha1().EngineImages(s.namespace).Create(img)
+	return s.lh().EngineImages(s.namespace).Create(img)
 }
 
 func (s *DataStore) UpdateEngineImage(img *longhorn.EngineImage) (*longhorn.EngineImage, error) {
 	if err := util.AddFinalizer(longhornFinalizerKey, img); err != nil {
 		return nil, err
 	}
-	return s.lhClient.LonghornV1alpha1().EngineImages(s.namespace).Update(img)
+	return s.lh().EngineImages(s.namespace).Update(img)
 }
 
 // DeleteEngineImage won't result in immediately deletion since finalizer was set by default
 func (s *DataStore) DeleteEngineImage(name string) error {
-	return s.lhClient.LonghornV1alpha1().EngineImages(s.namespace).Delete(name, &metav1.DeleteOptions{})
+	return s.lh().EngineImages(s.namespace).Delete(name, &metav1.DeleteOptions{})
 }
 
 // RemoveFinalizerForEngineImage will result in deletion if DeletionTimestamp was set
@@ -607,7 +612,7 @@ func (s *DataStore) RemoveFinalizerForEngineImage(obj *longhorn.EngineImage) err
 	if err := util.RemoveFinalizer(longhornFinalizerKey, obj); err != nil {
 		return err
 	}
-	_, err := s.lhClient.LonghornV1alpha1().EngineImages(s.namespace).Update(obj)
+	_, err := s.lh().EngineImages(s.namespace).Update(obj)
 	if err != nil {
 		// workaround `StorageError: invalid object, Code: 4` due to empty object
 		if obj.DeletionTimestamp != nil {
@@ -646,7 +651,7 @@ func (s *DataStore) CreateNode(node *longhorn.Node) (*longhorn.Node, error) {
 	if err := util.AddFinalizer(longhornFinalizerKey, node); err != nil {
 		return nil, err
 	}
-	return s.lhClient.LonghornV1alpha1().Nodes(s.namespace).Create(node)
+	return s.lh().Nodes(s.namespace).Create(node)
 }
 
 // CreateDefaultNode will set default directory to node replica mount path
@@ -694,7 +699,7 @@ func (s *DataStore) GetNode(name string) (*longhorn.Node, error) {
 }
 
 func (s *DataStore) UpdateNode(node *longhorn.Node) (*longhorn.Node, error) {
-	return s.lhClient.LonghornV1alpha1().Nodes(s.namespace).Update(node)
+	return s.lh().Nodes(s.namespace).Update(node)
 }
 
 func (s *DataStore) ListNodes() (map[string]*longhorn.Node, error) {
@@ -725,7 +730,7 @@ func (s *DataStore) RemoveFinalizerForNode(obj *longhorn.Node) error {
 	if err := util.RemoveFinalizer(longhornFinalizerKey, obj); err != nil {
 		return err
 	}
-	_, err := s.lhClient.LonghornV1alpha1().Nodes(s.namespace).Update(obj)
+	_, err := s.lh().Nodes(s.namespace).Update(obj)
 	if err != nil {
 		// workaround `StorageError: invalid object, Code: 4` due to empty object
 		if obj.DeletionTimestamp != nil {
@@ -886,7 +891,7 @@ func (s *DataStore) ResetEngineMonitoringStatus(e *longhorn.Engine) (*longhorn.E
 }
 
 func (s *DataStore) DeleteNode(name string) error {
-	return s.lhClient.LonghornV1alpha1().Nodes(s.namespace).Delete(name, &metav1.DeleteOptions{})
+	return s.lh().Nodes(s.namespace).Delete(name, &metav1.DeleteOptions{})
 }
 
 func (s *DataStore) ListEnginesByNode(name string) ([]*longhorn.Engine, error) {
