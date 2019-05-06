@@ -226,7 +226,7 @@ func newTestKubernetesController(lhInformerFactory lhinformerfactory.SharedInfor
 	volumeAttachmentInformer := kubeInformerFactory.Storage().V1beta1().VolumeAttachments()
 
 	ds := datastore.NewDataStore(
-		volumeInformer, engineInformer, replicaInformer,
+		engineInformer, replicaInformer,
 		engineImageInformer, nodeInformer,
 		lhClient,
 		podInformer, cronJobInformer, daemonSetInformer,
@@ -485,7 +485,6 @@ func (s *TestSuite) runKubernetesTestCases(c *C, testCases map[string]*Kubernete
 
 		lhClient := lhfake.NewSimpleClientset()
 		lhInformerFactory := lhinformerfactory.NewSharedInformerFactory(lhClient, controller.NoResyncPeriodFunc())
-		vIndexer := lhInformerFactory.Longhorn().V1alpha1().Volumes().Informer().GetIndexer()
 
 		pvIndexer := kubeInformerFactory.Core().V1().PersistentVolumes().Informer().GetIndexer()
 		pvcIndexer := kubeInformerFactory.Core().V1().PersistentVolumeClaims().Informer().GetIndexer()
@@ -497,8 +496,6 @@ func (s *TestSuite) runKubernetesTestCases(c *C, testCases map[string]*Kubernete
 		var v *longhorn.Volume
 		if tc.volume != nil {
 			v, err = lhClient.LonghornV1alpha1().Volumes(TestNamespace).Create(tc.volume)
-			c.Assert(err, IsNil)
-			err = vIndexer.Add(v)
 			c.Assert(err, IsNil)
 		}
 
@@ -681,7 +678,6 @@ func (s *TestSuite) runDisasterRecoveryTestCases(c *C, testCases map[string]*Dis
 
 		lhClient := lhfake.NewSimpleClientset()
 		lhInformerFactory := lhinformerfactory.NewSharedInformerFactory(lhClient, controller.NoResyncPeriodFunc())
-		vIndexer := lhInformerFactory.Longhorn().V1alpha1().Volumes().Informer().GetIndexer()
 		nodeIndexer := lhInformerFactory.Longhorn().V1alpha1().Nodes().Informer().GetIndexer()
 
 		pvIndexer := kubeInformerFactory.Core().V1().PersistentVolumes().Informer().GetIndexer()
@@ -697,11 +693,8 @@ func (s *TestSuite) runDisasterRecoveryTestCases(c *C, testCases map[string]*Dis
 			nodeIndexer.Add(node)
 		}
 
-		var v *longhorn.Volume
 		if tc.volume != nil {
-			v, err = lhClient.LonghornV1alpha1().Volumes(TestNamespace).Create(tc.volume)
-			c.Assert(err, IsNil)
-			err = vIndexer.Add(v)
+			_, err := lhClient.LonghornV1alpha1().Volumes(TestNamespace).Create(tc.volume)
 			c.Assert(err, IsNil)
 		}
 

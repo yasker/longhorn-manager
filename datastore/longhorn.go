@@ -255,37 +255,23 @@ func (s *DataStore) RemoveFinalizerForVolume(obj *longhorn.Volume) error {
 }
 
 func (s *DataStore) GetVolume(name string) (*longhorn.Volume, error) {
-	resultRO, err := s.getVolumeRO(name)
+	result, err := s.lh().Volumes(s.namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-	// Cannot use cached object from lister
-	return s.fixupVolume(resultRO.DeepCopy())
-}
-
-func (s *DataStore) getVolumeRO(name string) (*longhorn.Volume, error) {
-	resultRO, err := s.vLister.Volumes(s.namespace).Get(name)
-	if err != nil {
-		return nil, err
-	}
-	return resultRO, nil
-}
-
-func (s *DataStore) ListVolumesRO() ([]*longhorn.Volume, error) {
-	return s.vLister.Volumes(s.namespace).List(labels.Everything())
+	return s.fixupVolume(result)
 }
 
 func (s *DataStore) ListVolumes() (map[string]*longhorn.Volume, error) {
 	itemMap := make(map[string]*longhorn.Volume)
 
-	list, err := s.ListVolumesRO()
+	list, err := s.lh().Volumes(s.namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	for _, itemRO := range list {
-		// Cannot use cached object from lister
-		itemMap[itemRO.Name], err = s.fixupVolume(itemRO.DeepCopy())
+	for i, item := range list.Items {
+		itemMap[item.Name], err = s.fixupVolume(&list.Items[i])
 		if err != nil {
 			return nil, err
 		}
@@ -416,7 +402,7 @@ func (s *DataStore) ListVolumeEngines(volumeName string) (map[string]*longhorn.E
 func (s *DataStore) fixupEngine(engine *longhorn.Engine) (*longhorn.Engine, error) {
 	// v0.3
 	if engine.Spec.VolumeSize == 0 || engine.Spec.Frontend == "" {
-		volume, err := s.getVolumeRO(engine.Spec.VolumeName)
+		volume, err := s.GetVolume(engine.Spec.VolumeName)
 		if err != nil {
 			return nil, fmt.Errorf("BUG: cannot fix up engine object, volume %v cannot be found", engine.Spec.VolumeName)
 		}

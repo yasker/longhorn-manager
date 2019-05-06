@@ -57,7 +57,7 @@ func newTestVolumeController(lhInformerFactory lhinformerfactory.SharedInformerF
 	persistentVolumeClaimInformer := kubeInformerFactory.Core().V1().PersistentVolumeClaims()
 
 	ds := datastore.NewDataStore(
-		volumeInformer, engineInformer, replicaInformer,
+		engineInformer, replicaInformer,
 		engineImageInformer, nodeInformer,
 		lhClient,
 		podInformer, cronJobInformer, daemonSetInformer,
@@ -551,7 +551,6 @@ func (s *TestSuite) runTestCases(c *C, testCases map[string]*VolumeTestCase) {
 
 		lhClient := lhfake.NewSimpleClientset()
 		lhInformerFactory := lhinformerfactory.NewSharedInformerFactory(lhClient, controller.NoResyncPeriodFunc())
-		vIndexer := lhInformerFactory.Longhorn().V1alpha1().Volumes().Informer().GetIndexer()
 		eIndexer := lhInformerFactory.Longhorn().V1alpha1().Engines().Informer().GetIndexer()
 		rIndexer := lhInformerFactory.Longhorn().V1alpha1().Replicas().Informer().GetIndexer()
 		nIndexer := lhInformerFactory.Longhorn().V1alpha1().Nodes().Informer().GetIndexer()
@@ -600,8 +599,6 @@ func (s *TestSuite) runTestCases(c *C, testCases map[string]*VolumeTestCase) {
 
 		// Need to put it into both fakeclientset and Indexer
 		v, err := lhClient.LonghornV1alpha1().Volumes(TestNamespace).Create(tc.volume)
-		c.Assert(err, IsNil)
-		err = vIndexer.Add(v)
 		c.Assert(err, IsNil)
 
 		if tc.engines != nil {

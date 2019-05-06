@@ -213,7 +213,7 @@ func (c *UninstallController) checkPreconditions() error {
 		}
 	}
 
-	if vols, err := c.ds.ListVolumesRO(); err != nil {
+	if vols, err := c.ds.ListVolumes(); err != nil {
 		return err
 	} else if len(vols) > 0 {
 		volumesInUse := false
