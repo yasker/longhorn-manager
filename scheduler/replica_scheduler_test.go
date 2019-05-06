@@ -53,7 +53,6 @@ func newReplicaScheduler(lhInformerFactory lhinformerfactory.SharedInformerFacto
 	lhClient *lhfake.Clientset, kubeClient *fake.Clientset) *ReplicaScheduler {
 	fmt.Printf("testing NewReplicaScheduler\n")
 
-	replicaInformer := lhInformerFactory.Longhorn().V1alpha1().Replicas()
 	engineImageInformer := lhInformerFactory.Longhorn().V1alpha1().EngineImages()
 	nodeInformer := lhInformerFactory.Longhorn().V1alpha1().Nodes()
 
@@ -64,7 +63,6 @@ func newReplicaScheduler(lhInformerFactory lhinformerfactory.SharedInformerFacto
 	persistentVolumeClaimInformer := kubeInformerFactory.Core().V1().PersistentVolumeClaims()
 
 	ds := datastore.NewDataStore(
-		replicaInformer,
 		engineImageInformer, nodeInformer,
 		lhClient,
 		podInformer, cronJobInformer, daemonSetInformer,
@@ -465,7 +463,6 @@ func (s *TestSuite) TestReplicaScheduler(c *C) {
 		lhInformerFactory := lhinformerfactory.NewSharedInformerFactory(lhClient, controller.NoResyncPeriodFunc())
 
 		vIndexer := lhInformerFactory.Longhorn().V1alpha1().Volumes().Informer().GetIndexer()
-		rIndexer := lhInformerFactory.Longhorn().V1alpha1().Replicas().Informer().GetIndexer()
 		nIndexer := lhInformerFactory.Longhorn().V1alpha1().Nodes().Informer().GetIndexer()
 		sIndexer := lhInformerFactory.Longhorn().V1alpha1().Settings().Informer().GetIndexer()
 		pIndexer := kubeInformerFactory.Core().V1().Pods().Informer().GetIndexer()
@@ -505,8 +502,6 @@ func (s *TestSuite) TestReplicaScheduler(c *C) {
 		for _, replica := range tc.replicas {
 			r, err := lhClient.LonghornV1alpha1().Replicas(TestNamespace).Create(replica)
 			c.Assert(err, IsNil)
-			c.Assert(r, NotNil)
-			rIndexer.Add(r)
 
 			sr, err := s.ScheduleReplica(r, tc.replicas)
 			if tc.err {

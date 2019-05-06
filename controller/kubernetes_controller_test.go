@@ -213,7 +213,6 @@ func newTestKubernetesController(lhInformerFactory lhinformerfactory.SharedInfor
 	lhClient *lhfake.Clientset, kubeClient *fake.Clientset) *KubernetesController {
 
 	volumeInformer := lhInformerFactory.Longhorn().V1alpha1().Volumes()
-	replicaInformer := lhInformerFactory.Longhorn().V1alpha1().Replicas()
 	engineImageInformer := lhInformerFactory.Longhorn().V1alpha1().EngineImages()
 	nodeInformer := lhInformerFactory.Longhorn().V1alpha1().Nodes()
 
@@ -225,7 +224,6 @@ func newTestKubernetesController(lhInformerFactory lhinformerfactory.SharedInfor
 	volumeAttachmentInformer := kubeInformerFactory.Storage().V1beta1().VolumeAttachments()
 
 	ds := datastore.NewDataStore(
-		replicaInformer,
 		engineImageInformer, nodeInformer,
 		lhClient,
 		podInformer, cronJobInformer, daemonSetInformer,

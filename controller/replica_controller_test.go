@@ -96,7 +96,6 @@ func newTestReplicaController(lhInformerFactory lhinformerfactory.SharedInformer
 	persistentVolumeClaimInformer := kubeInformerFactory.Core().V1().PersistentVolumeClaims()
 
 	ds := datastore.NewDataStore(
-		replicaInformer,
 		engineImageInformer, nodeInformer,
 		lhClient,
 		podInformer, cronJobInformer, daemonSetInformer,
@@ -172,8 +171,6 @@ func (s *TestSuite) TestSyncReplica(c *C) {
 
 		lhClient := lhfake.NewSimpleClientset()
 		lhInformerFactory := lhinformerfactory.NewSharedInformerFactory(lhClient, controller.NoResyncPeriodFunc())
-		rIndexer := lhInformerFactory.Longhorn().V1alpha1().Replicas().Informer().GetIndexer()
-		defer rIndexer.Replace(make([]interface{}, 0), "0")
 
 		rc := newTestReplicaController(lhInformerFactory, kubeInformerFactory, lhClient, kubeClient, TestOwnerID1)
 
@@ -183,8 +180,6 @@ func (s *TestSuite) TestSyncReplica(c *C) {
 		replica.Spec.EngineName = "engine-e"
 		replica.Spec.NodeID = tc.NodeID
 		replica.Spec.DataPath = tc.DataPath
-		err = rIndexer.Add(replica)
-		c.Assert(err, IsNil)
 		_, err = lhClient.LonghornV1alpha1().Replicas(replica.Namespace).Create(replica)
 		c.Assert(err, IsNil)
 

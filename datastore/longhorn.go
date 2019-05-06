@@ -471,32 +471,24 @@ func (s *DataStore) RemoveFinalizerForReplica(obj *longhorn.Replica) error {
 }
 
 func (s *DataStore) GetReplica(name string) (*longhorn.Replica, error) {
-	resultRO, err := s.getReplicaRO(name)
+	result, err := s.lh().Replicas(s.namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-	// Cannot use cached object from lister
-	return s.fixupReplica(resultRO.DeepCopy())
+	return s.fixupReplica(result)
 }
 
-func (s *DataStore) getReplicaRO(name string) (*longhorn.Replica, error) {
-	resultRO, err := s.rLister.Replicas(s.namespace).Get(name)
-	if err != nil {
-		return nil, err
-	}
-	return resultRO, nil
-}
-
-func (s *DataStore) listReplicas(selector labels.Selector) (map[string]*longhorn.Replica, error) {
-	list, err := s.rLister.Replicas(s.namespace).List(selector)
+func (s *DataStore) listReplicas(selector string) (map[string]*longhorn.Replica, error) {
+	list, err := s.lh().Replicas(s.namespace).List(metav1.ListOptions{
+		LabelSelector: selector,
+	})
 	if err != nil {
 		return nil, err
 	}
 
 	itemMap := map[string]*longhorn.Replica{}
-	for _, itemRO := range list {
-		// Cannot use cached object from lister
-		itemMap[itemRO.Name], err = s.fixupReplica(itemRO.DeepCopy())
+	for i, item := range list.Items {
+		itemMap[item.Name], err = s.fixupReplica(&list.Items[i])
 		if err != nil {
 			return nil, err
 		}
@@ -505,15 +497,11 @@ func (s *DataStore) listReplicas(selector labels.Selector) (map[string]*longhorn
 }
 
 func (s *DataStore) ListReplicas() (map[string]*longhorn.Replica, error) {
-	return s.listReplicas(labels.Everything())
+	return s.listReplicas("")
 }
 
 func (s *DataStore) ListVolumeReplicas(volumeName string) (map[string]*longhorn.Replica, error) {
-	selector, err := getVolumeSelector(volumeName)
-	if err != nil {
-		return nil, err
-	}
-	return s.listReplicas(selector)
+	return s.listReplicas(getVolumeSelectorString(volumeName))
 }
 
 func (s *DataStore) fixupReplica(replica *longhorn.Replica) (*longhorn.Replica, error) {
@@ -746,11 +734,7 @@ func getNodeSelector(nodeName string) (labels.Selector, error) {
 }
 
 func (s *DataStore) ListReplicasByNode(name string) (map[string][]*longhorn.Replica, error) {
-	nodeSelector, err := getNodeSelector(name)
-	if err != nil {
-		return nil, err
-	}
-	replicaList, err := s.rLister.Replicas(s.namespace).List(nodeSelector)
+	replicaList, err := s.listReplicas(getNodeSelectorString(name))
 	if err != nil {
 		return nil, err
 	}

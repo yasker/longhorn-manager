@@ -21,8 +21,6 @@ type DataStore struct {
 	namespace string
 
 	lhClient     lhclientset.Interface
-	rLister      lhlisters.ReplicaLister
-	rStoreSynced cache.InformerSynced
 	iLister      lhlisters.EngineImageLister
 	iStoreSynced cache.InformerSynced
 	nLister      lhlisters.NodeLister
@@ -42,7 +40,6 @@ type DataStore struct {
 }
 
 func NewDataStore(
-	replicaInformer lhinformers.ReplicaInformer,
 	engineImageInformer lhinformers.EngineImageInformer,
 	nodeInformer lhinformers.NodeInformer,
 	lhClient lhclientset.Interface,
@@ -60,8 +57,6 @@ func NewDataStore(
 		namespace: namespace,
 
 		lhClient:     lhClient,
-		rLister:      replicaInformer.Lister(),
-		rStoreSynced: replicaInformer.Informer().HasSynced,
 		iLister:      engineImageInformer.Lister(),
 		iStoreSynced: engineImageInformer.Informer().HasSynced,
 		nLister:      nodeInformer.Lister(),
@@ -83,7 +78,6 @@ func NewDataStore(
 
 func (s *DataStore) Sync(stopCh <-chan struct{}) bool {
 	return controller.WaitForCacheSync("longhorn datastore", stopCh,
-		s.rStoreSynced,
 		s.iStoreSynced, s.nStoreSynced,
 		s.pStoreSynced, s.cjStoreSynced, s.dsStoreSynced,
 		s.pvStoreSynced, s.pvcStoreSynced)

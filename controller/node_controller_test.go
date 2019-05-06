@@ -55,7 +55,6 @@ func newTestNodeController(lhInformerFactory lhinformerfactory.SharedInformerFac
 	persistentVolumeClaimInformer := kubeInformerFactory.Core().V1().PersistentVolumeClaims()
 
 	ds := datastore.NewDataStore(
-		replicaInformer,
 		engineImageInformer, nodeInformer,
 		lhClient,
 		podInformer, cronJobInformer, daemonSetInformer,
@@ -411,7 +410,6 @@ func (s *TestSuite) TestSyncNode(c *C) {
 		nIndexer := lhInformerFactory.Longhorn().V1alpha1().Nodes().Informer().GetIndexer()
 		pIndexer := kubeInformerFactory.Core().V1().Pods().Informer().GetIndexer()
 
-		rIndexer := lhInformerFactory.Longhorn().V1alpha1().Replicas().Informer().GetIndexer()
 		knIndexer := kubeInformerFactory.Core().V1().Nodes().Informer().GetIndexer()
 
 		// create kuberentes node
@@ -437,10 +435,8 @@ func (s *TestSuite) TestSyncNode(c *C) {
 		}
 		// create replicas
 		for _, replica := range tc.replicas {
-			r, err := lhClient.Longhorn().Replicas(TestNamespace).Create(replica)
+			_, err := lhClient.Longhorn().Replicas(TestNamespace).Create(replica)
 			c.Assert(err, IsNil)
-			c.Assert(r, NotNil)
-			rIndexer.Add(r)
 		}
 		// sync node status
 		for nodeName, node := range tc.nodes {

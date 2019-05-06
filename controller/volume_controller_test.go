@@ -57,7 +57,6 @@ func newTestVolumeController(lhInformerFactory lhinformerfactory.SharedInformerF
 	persistentVolumeClaimInformer := kubeInformerFactory.Core().V1().PersistentVolumeClaims()
 
 	ds := datastore.NewDataStore(
-		replicaInformer,
 		engineImageInformer, nodeInformer,
 		lhClient,
 		podInformer, cronJobInformer, daemonSetInformer,
@@ -551,7 +550,6 @@ func (s *TestSuite) runTestCases(c *C, testCases map[string]*VolumeTestCase) {
 
 		lhClient := lhfake.NewSimpleClientset()
 		lhInformerFactory := lhinformerfactory.NewSharedInformerFactory(lhClient, controller.NoResyncPeriodFunc())
-		rIndexer := lhInformerFactory.Longhorn().V1alpha1().Replicas().Informer().GetIndexer()
 		nIndexer := lhInformerFactory.Longhorn().V1alpha1().Nodes().Informer().GetIndexer()
 
 		pIndexer := kubeInformerFactory.Core().V1().Pods().Informer().GetIndexer()
@@ -610,8 +608,6 @@ func (s *TestSuite) runTestCases(c *C, testCases map[string]*VolumeTestCase) {
 		if tc.replicas != nil {
 			for _, r := range tc.replicas {
 				r, err = lhClient.LonghornV1alpha1().Replicas(TestNamespace).Create(r)
-				c.Assert(err, IsNil)
-				err = rIndexer.Add(r)
 				c.Assert(err, IsNil)
 			}
 		}
