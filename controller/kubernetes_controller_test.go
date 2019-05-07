@@ -214,7 +214,6 @@ func newTestKubernetesController(lhInformerFactory lhinformerfactory.SharedInfor
 
 	volumeInformer := lhInformerFactory.Longhorn().V1alpha1().Volumes()
 	engineImageInformer := lhInformerFactory.Longhorn().V1alpha1().EngineImages()
-	nodeInformer := lhInformerFactory.Longhorn().V1alpha1().Nodes()
 
 	podInformer := kubeInformerFactory.Core().V1().Pods()
 	persistentVolumeInformer := kubeInformerFactory.Core().V1().PersistentVolumes()
@@ -224,7 +223,7 @@ func newTestKubernetesController(lhInformerFactory lhinformerfactory.SharedInfor
 	volumeAttachmentInformer := kubeInformerFactory.Storage().V1beta1().VolumeAttachments()
 
 	ds := datastore.NewDataStore(
-		engineImageInformer, nodeInformer,
+		engineImageInformer,
 		lhClient,
 		podInformer, cronJobInformer, daemonSetInformer,
 		persistentVolumeInformer, persistentVolumeClaimInformer,

@@ -649,16 +649,11 @@ func (s *DataStore) CreateDefaultNode(name string) (*longhorn.Node, error) {
 	return s.CreateNode(node)
 }
 
-func (s *DataStore) GetNodeRO(name string) (*longhorn.Node, error) {
-	return s.nLister.Nodes(s.namespace).Get(name)
-}
-
 func (s *DataStore) GetNode(name string) (*longhorn.Node, error) {
-	result, err := s.GetNodeRO(name)
+	node, err := s.lh().Nodes(s.namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-	node := result.DeepCopy()
 	if node.Status.Conditions == nil {
 		node.Status.Conditions = map[types.NodeConditionType]types.Condition{}
 	}
@@ -672,18 +667,16 @@ func (s *DataStore) UpdateNode(node *longhorn.Node) (*longhorn.Node, error) {
 func (s *DataStore) ListNodes() (map[string]*longhorn.Node, error) {
 	itemMap := make(map[string]*longhorn.Node)
 
-	nodeList, err := s.nLister.Nodes(s.namespace).List(labels.Everything())
+	list, err := s.lh().Nodes(s.namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	for _, node := range nodeList {
-		// Cannot use cached object from lister
-		result := node.DeepCopy()
-		if result.Status.Conditions == nil {
-			result.Status.Conditions = map[types.NodeConditionType]types.Condition{}
+	for i, node := range list.Items {
+		if node.Status.Conditions == nil {
+			node.Status.Conditions = map[types.NodeConditionType]types.Condition{}
 		}
-		itemMap[node.Name] = result
+		itemMap[node.Name] = &list.Items[i]
 	}
 	return itemMap, nil
 }
@@ -709,7 +702,7 @@ func (s *DataStore) RemoveFinalizerForNode(obj *longhorn.Node) error {
 }
 
 func (s *DataStore) IsNodeDownOrDeleted(name string) (bool, error) {
-	node, err := s.GetNodeRO(name)
+	node, err := s.GetNode(name)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return true, nil

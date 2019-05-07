@@ -23,8 +23,6 @@ type DataStore struct {
 	lhClient     lhclientset.Interface
 	iLister      lhlisters.EngineImageLister
 	iStoreSynced cache.InformerSynced
-	nLister      lhlisters.NodeLister
-	nStoreSynced cache.InformerSynced
 
 	kubeClient     clientset.Interface
 	pLister        corelisters.PodLister
@@ -41,7 +39,6 @@ type DataStore struct {
 
 func NewDataStore(
 	engineImageInformer lhinformers.EngineImageInformer,
-	nodeInformer lhinformers.NodeInformer,
 	lhClient lhclientset.Interface,
 
 	podInformer coreinformers.PodInformer,
@@ -59,8 +56,6 @@ func NewDataStore(
 		lhClient:     lhClient,
 		iLister:      engineImageInformer.Lister(),
 		iStoreSynced: engineImageInformer.Informer().HasSynced,
-		nLister:      nodeInformer.Lister(),
-		nStoreSynced: nodeInformer.Informer().HasSynced,
 
 		kubeClient:     kubeClient,
 		pLister:        podInformer.Lister(),
@@ -78,7 +73,7 @@ func NewDataStore(
 
 func (s *DataStore) Sync(stopCh <-chan struct{}) bool {
 	return controller.WaitForCacheSync("longhorn datastore", stopCh,
-		s.iStoreSynced, s.nStoreSynced,
+		s.iStoreSynced,
 		s.pStoreSynced, s.cjStoreSynced, s.dsStoreSynced,
 		s.pvStoreSynced, s.pvcStoreSynced)
 }
