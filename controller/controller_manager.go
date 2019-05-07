@@ -76,7 +76,6 @@ func StartControllers(stopCh chan struct{}, controllerID, serviceAccount, manage
 	volumeAttachmentInformer := kubeInformerFactory.Storage().V1beta1().VolumeAttachments()
 
 	ds := datastore.NewDataStore(
-		engineImageInformer,
 		lhClient,
 		podInformer, cronJobInformer, daemonSetInformer,
 		persistentVolumeInformer, persistentVolumeClaimInformer,

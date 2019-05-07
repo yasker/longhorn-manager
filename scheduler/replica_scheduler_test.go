@@ -53,8 +53,6 @@ func newReplicaScheduler(lhInformerFactory lhinformerfactory.SharedInformerFacto
 	lhClient *lhfake.Clientset, kubeClient *fake.Clientset) *ReplicaScheduler {
 	fmt.Printf("testing NewReplicaScheduler\n")
 
-	engineImageInformer := lhInformerFactory.Longhorn().V1alpha1().EngineImages()
-
 	podInformer := kubeInformerFactory.Core().V1().Pods()
 	cronJobInformer := kubeInformerFactory.Batch().V1beta1().CronJobs()
 	daemonSetInformer := kubeInformerFactory.Apps().V1beta2().DaemonSets()
@@ -62,7 +60,6 @@ func newReplicaScheduler(lhInformerFactory lhinformerfactory.SharedInformerFacto
 	persistentVolumeClaimInformer := kubeInformerFactory.Core().V1().PersistentVolumeClaims()
 
 	ds := datastore.NewDataStore(
-		engineImageInformer,
 		lhClient,
 		podInformer, cronJobInformer, daemonSetInformer,
 		persistentVolumeInformer, persistentVolumeClaimInformer,

@@ -13,18 +13,14 @@ import (
 	"k8s.io/kubernetes/pkg/controller"
 
 	lhclientset "github.com/rancher/longhorn-manager/k8s/pkg/client/clientset/versioned"
-	lhinformers "github.com/rancher/longhorn-manager/k8s/pkg/client/informers/externalversions/longhorn/v1alpha1"
-	lhlisters "github.com/rancher/longhorn-manager/k8s/pkg/client/listers/longhorn/v1alpha1"
 )
 
 type DataStore struct {
 	namespace string
 
-	lhClient     lhclientset.Interface
-	iLister      lhlisters.EngineImageLister
-	iStoreSynced cache.InformerSynced
+	lhClient   lhclientset.Interface
+	kubeClient clientset.Interface
 
-	kubeClient     clientset.Interface
 	pLister        corelisters.PodLister
 	pStoreSynced   cache.InformerSynced
 	cjLister       batchlisters_v1beta1.CronJobLister
@@ -38,7 +34,6 @@ type DataStore struct {
 }
 
 func NewDataStore(
-	engineImageInformer lhinformers.EngineImageInformer,
 	lhClient lhclientset.Interface,
 
 	podInformer coreinformers.PodInformer,
@@ -53,11 +48,9 @@ func NewDataStore(
 	return &DataStore{
 		namespace: namespace,
 
-		lhClient:     lhClient,
-		iLister:      engineImageInformer.Lister(),
-		iStoreSynced: engineImageInformer.Informer().HasSynced,
+		lhClient:   lhClient,
+		kubeClient: kubeClient,
 
-		kubeClient:     kubeClient,
 		pLister:        podInformer.Lister(),
 		pStoreSynced:   podInformer.Informer().HasSynced,
 		cjLister:       cronJobInformer.Lister(),
@@ -73,7 +66,6 @@ func NewDataStore(
 
 func (s *DataStore) Sync(stopCh <-chan struct{}) bool {
 	return controller.WaitForCacheSync("longhorn datastore", stopCh,
-		s.iStoreSynced,
 		s.pStoreSynced, s.cjStoreSynced, s.dsStoreSynced,
 		s.pvStoreSynced, s.pvcStoreSynced)
 }

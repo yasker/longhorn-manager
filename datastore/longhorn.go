@@ -591,25 +591,19 @@ func (s *DataStore) RemoveFinalizerForEngineImage(obj *longhorn.EngineImage) err
 }
 
 func (s *DataStore) GetEngineImage(name string) (*longhorn.EngineImage, error) {
-	resultRO, err := s.iLister.EngineImages(s.namespace).Get(name)
-	if err != nil {
-		return nil, err
-	}
-	// Cannot use cached object from lister
-	return resultRO.DeepCopy(), nil
+	return s.lh().EngineImages(s.namespace).Get(name, metav1.GetOptions{})
 }
 
 func (s *DataStore) ListEngineImages() (map[string]*longhorn.EngineImage, error) {
 	itemMap := map[string]*longhorn.EngineImage{}
 
-	list, err := s.iLister.EngineImages(s.namespace).List(labels.Everything())
+	list, err := s.lh().EngineImages(s.namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	for _, itemRO := range list {
-		// Cannot use cached object from lister
-		itemMap[itemRO.Name] = itemRO.DeepCopy()
+	for i, item := range list.Items {
+		itemMap[item.Name] = &list.Items[i]
 	}
 	return itemMap, nil
 }

@@ -43,7 +43,6 @@ type NodeTestCase struct {
 func newTestNodeController(lhInformerFactory lhinformerfactory.SharedInformerFactory, kubeInformerFactory informers.SharedInformerFactory,
 	lhClient *lhfake.Clientset, kubeClient *fake.Clientset, controllerID string) *NodeController {
 	replicaInformer := lhInformerFactory.Longhorn().V1alpha1().Replicas()
-	engineImageInformer := lhInformerFactory.Longhorn().V1alpha1().EngineImages()
 	nodeInformer := lhInformerFactory.Longhorn().V1alpha1().Nodes()
 	settingInformer := lhInformerFactory.Longhorn().V1alpha1().Settings()
 
@@ -55,7 +54,6 @@ func newTestNodeController(lhInformerFactory lhinformerfactory.SharedInformerFac
 	persistentVolumeClaimInformer := kubeInformerFactory.Core().V1().PersistentVolumeClaims()
 
 	ds := datastore.NewDataStore(
-		engineImageInformer,
 		lhClient,
 		podInformer, cronJobInformer, daemonSetInformer,
 		persistentVolumeInformer, persistentVolumeClaimInformer,
